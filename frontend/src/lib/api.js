@@ -1,3 +1,4 @@
+
 import axios from "axios"
 
 const ROOT_BASE =
@@ -53,12 +54,25 @@ export function extractApiError(error, fallback = "Something went wrong.") {
   return fallback
 }
 
-export async function signupUser(payload) {
-  return await post("/auth/signup/", payload)
+export async function signupUser({
+  username,
+  email,
+  password,
+  confirm_password,
+}) {
+  return await post("/auth/signup/", {
+    username,
+    email,
+    password,
+    confirm_password,
+  })
 }
 
-export async function loginUser(payload) {
-  return await post("/auth/login/", payload)
+export async function loginUser({ username, password }) {
+  return await post("/auth/login/", {
+    username,
+    password,
+  })
 }
 
 export async function logoutUser() {
