@@ -105,7 +105,7 @@ MEDIA_ROOT = os.getenv("MEDIA_ROOT", str(BASE_DIR / "media"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "").strip()
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "").strip().rstrip("/")
 
 default_cors = [
     "http://127.0.0.1:5173",
