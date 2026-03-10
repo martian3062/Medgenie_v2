@@ -8,15 +8,21 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# -----------------------------------------------------------------------------
+# Core
+# -----------------------------------------------------------------------------
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.getenv("ALLOWED_HOSTS", "*").split(",")
+    for host in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
     if host.strip()
 ]
 
+# -----------------------------------------------------------------------------
+# Apps
+# -----------------------------------------------------------------------------
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -30,9 +36,12 @@ INSTALLED_APPS = [
     "app",
 ]
 
+# -----------------------------------------------------------------------------
+# Middleware
+# -----------------------------------------------------------------------------
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -41,8 +50,16 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# -----------------------------------------------------------------------------
+# URLs / WSGI / ASGI
+# -----------------------------------------------------------------------------
 ROOT_URLCONF = "backend.urls"
+WSGI_APPLICATION = "backend.wsgi.application"
+ASGI_APPLICATION = "backend.asgi.application"
 
+# -----------------------------------------------------------------------------
+# Templates
+# -----------------------------------------------------------------------------
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -58,12 +75,15 @@ TEMPLATES = [
     }
 ]
 
-WSGI_APPLICATION = "backend.wsgi.application"
-ASGI_APPLICATION = "backend.asgi.application"
-
-# SQLite for demo
-# Optional override via DATABASE_URL if you later switch DBs
+# -----------------------------------------------------------------------------
+# Database
+# Priority:
+# 1. DATABASE_URL -> production Postgres or other DB
+# 2. SQLITE_PATH  -> custom SQLite path
+# 3. local db.sqlite3
+# -----------------------------------------------------------------------------
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
 if DATABASE_URL:
     DATABASES = {
         "default": dj_database_url.parse(
@@ -73,30 +93,30 @@ if DATABASE_URL:
         )
     }
 else:
-    # If using Render persistent disk, set SQLITE_PATH like /var/data/db.sqlite3
     SQLITE_PATH = os.getenv("SQLITE_PATH", "").strip()
-    if SQLITE_PATH:
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": SQLITE_PATH,
-            }
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": SQLITE_PATH if SQLITE_PATH else BASE_DIR / "db.sqlite3",
         }
-    else:
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": BASE_DIR / "db.sqlite3",
-            }
-        }
+    }
 
+# -----------------------------------------------------------------------------
+# Password validation
+# -----------------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = []
 
+# -----------------------------------------------------------------------------
+# Internationalization
+# -----------------------------------------------------------------------------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
 
+# -----------------------------------------------------------------------------
+# Static / Media
+# -----------------------------------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -105,30 +125,55 @@ MEDIA_ROOT = os.getenv("MEDIA_ROOT", str(BASE_DIR / "media"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# -----------------------------------------------------------------------------
+# Frontend origin / CORS / CSRF
+# -----------------------------------------------------------------------------
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "").strip().rstrip("/")
 
-default_cors = [
+default_frontend_origins = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
 ]
 
 if FRONTEND_ORIGIN:
-    default_cors.append(FRONTEND_ORIGIN)
+    default_frontend_origins.append(FRONTEND_ORIGIN)
 
 # remove duplicates while preserving order
-CORS_ALLOWED_ORIGINS = list(dict.fromkeys(default_cors))
-CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(default_cors))
+default_frontend_origins = list(dict.fromkeys(default_frontend_origins))
+
+CORS_ALLOWED_ORIGINS = default_frontend_origins
+CSRF_TRUSTED_ORIGINS = default_frontend_origins
 
 CORS_ALLOW_CREDENTIALS = True
 
+# -----------------------------------------------------------------------------
+# Session / CSRF cookies
+# Local:
+#   Lax + insecure cookies work fine when using same host
+# Production:
+#   None + Secure needed for cross-site frontend/backend
+# -----------------------------------------------------------------------------
 SESSION_COOKIE_HTTPONLY = True
 
-# Required for Netlify frontend -> Render backend cookie auth
-SESSION_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+USE_CROSS_SITE_COOKIES = os.getenv("USE_CROSS_SITE_COOKIES", "false").lower() == "true"
 
+if USE_CROSS_SITE_COOKIES:
+    SESSION_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = not DEBUG
+    CSRF_COOKIE_SECURE = not DEBUG
+
+# Helpful when behind Koyeb / proxy / HTTPS terminator
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# -----------------------------------------------------------------------------
+# Django REST Framework
+# -----------------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
@@ -138,6 +183,9 @@ REST_FRAMEWORK = {
     ],
 }
 
+# -----------------------------------------------------------------------------
+# Cache
+# -----------------------------------------------------------------------------
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -145,12 +193,19 @@ CACHES = {
     }
 }
 
+# -----------------------------------------------------------------------------
+# Channels
+# In-memory is okay for local dev / single instance deploy
+# -----------------------------------------------------------------------------
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
     }
 }
 
+# -----------------------------------------------------------------------------
+# AI / External services
+# -----------------------------------------------------------------------------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b").strip()
 GROQ_REASONING_EFFORT = os.getenv("GROQ_REASONING_EFFORT", "medium").strip()
@@ -158,4 +213,7 @@ GROQ_REASONING_EFFORT = os.getenv("GROQ_REASONING_EFFORT", "medium").strip()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
+# -----------------------------------------------------------------------------
+# News
+# -----------------------------------------------------------------------------
 NEWS_REFRESH_HOURS = int(os.getenv("NEWS_REFRESH_HOURS", "3"))
