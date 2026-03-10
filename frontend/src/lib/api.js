@@ -12,11 +12,14 @@ const api = axios.create({
 
 function getCookie(name) {
   if (typeof document === "undefined") return null
+
   const value = `; ${document.cookie}`
   const parts = value.split(`; ${name}=`)
+
   if (parts.length === 2) {
     return parts.pop().split(";").shift()
   }
+
   return null
 }
 
@@ -36,6 +39,7 @@ async function post(url, data = {}, config = {}) {
   const res = await api.post(url, data, {
     ...config,
     headers,
+    withCredentials: true,
   })
 
   return res.data
@@ -62,12 +66,16 @@ export async function logoutUser() {
 }
 
 export async function getCurrentUser() {
-  const res = await api.get("/auth/me/")
+  const res = await api.get("/auth/me/", {
+    withCredentials: true,
+  })
   return res.data
 }
 
 export async function getReports() {
-  const res = await api.get("/reports/")
+  const res = await api.get("/reports/", {
+    withCredentials: true,
+  })
   return res.data
 }
 
@@ -78,6 +86,7 @@ export async function uploadReport(file) {
   const csrftoken = getCookie("csrftoken") || (await ensureCsrfCookie())
 
   const res = await api.post("/reports/upload/", formData, {
+    withCredentials: true,
     headers: {
       "X-CSRFToken": csrftoken,
     },
@@ -87,7 +96,9 @@ export async function uploadReport(file) {
 }
 
 export async function getReport(id) {
-  const res = await api.get(`/reports/${id}/`)
+  const res = await api.get(`/reports/${id}/`, {
+    withCredentials: true,
+  })
   return res.data
 }
 
@@ -100,12 +111,16 @@ export async function homeChat(message) {
 }
 
 export async function getHealthcareNews() {
-  const res = await api.get("/news/healthcare/")
+  const res = await api.get("/news/healthcare/", {
+    withCredentials: true,
+  })
   return res.data
 }
 
 export async function getCancerNews() {
-  const res = await api.get("/news/cancer/")
+  const res = await api.get("/news/cancer/", {
+    withCredentials: true,
+  })
   return res.data
 }
 
