@@ -2,7 +2,6 @@ import os
 import tempfile
 
 import fitz
-import easyocr
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
 _reader = None
@@ -11,6 +10,7 @@ _reader = None
 def get_reader():
     global _reader
     if _reader is None:
+        import easyocr
         _reader = easyocr.Reader(["en"], gpu=False)
     return _reader
 
@@ -27,11 +27,15 @@ def get_file_type(path: str) -> str:
 def extract_text_from_pdf(path: str) -> str:
     doc = fitz.open(path)
     try:
-        parts = [page.get_text("text") for page in doc]
-        text = "\n".join(parts).strip()
+        parts = []
+        for page in doc:
+            text = page.get_text("text")
+            if text and text.strip():
+                parts.append(text)
 
-        if text:
-            return text
+        full_text = "\n".join(parts).strip()
+        if full_text:
+            return full_text
 
         reader = get_reader()
         ocr_parts = []
@@ -46,7 +50,8 @@ def extract_text_from_pdf(path: str) -> str:
             try:
                 pix.save(tmp_path)
                 result = reader.readtext(tmp_path, detail=0, paragraph=True)
-                ocr_parts.append("\n".join(result))
+                if result:
+                    ocr_parts.append("\n".join(result))
             finally:
                 if os.path.exists(tmp_path):
                     os.remove(tmp_path)
