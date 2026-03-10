@@ -1,7 +1,9 @@
 import axios from "axios"
 
-const ROOT_BASE = import.meta.env.VITE_API_ROOT || "http://127.0.0.1:8000"
-const API_BASE = `${ROOT_BASE}/api`
+const ROOT_BASE =
+  import.meta.env.VITE_API_ROOT?.trim() || "http://127.0.0.1:8000"
+
+const API_BASE = `${ROOT_BASE.replace(/\/+$/, "")}/api`
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -42,6 +44,7 @@ async function post(url, data = {}, config = {}) {
 export function extractApiError(error, fallback = "Something went wrong.") {
   if (error?.response?.data?.error) return error.response.data.error
   if (error?.response?.data?.detail) return error.response.data.detail
+  if (error?.response?.data?.message) return error.response.data.message
   if (error?.message) return error.message
   return fallback
 }
@@ -122,4 +125,4 @@ export async function getConsultRoomToken(roomId) {
   return await post(`/doctor/rooms/${roomId}/token/`, {})
 }
 
-export { api }
+export { api, ROOT_BASE, API_BASE }
