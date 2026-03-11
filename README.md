@@ -1,4 +1,4 @@
-# Med Holo AI v3 Starter
+# Medicobot v3 Starter
 
 Django + React starter with:
 - OCR/text extraction for PDF and images
@@ -14,7 +14,7 @@ Django + React starter with:
 ## Backend
 ```bash
 cd backend
-python -m venv venv
+python3.10 -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
@@ -29,9 +29,5 @@ cd frontend
 npm install
 npm run dev
 ```
-
-## GLB model
-Place your GLB at:
-`frontend/public/models/human.glb`
 
 If it is missing, the app falls back to a procedural hologram body.
