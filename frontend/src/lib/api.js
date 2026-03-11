@@ -10,33 +10,25 @@ const api = axios.create({
   withCredentials: true,
 })
 
-function getCookie(name) {
-  if (typeof document === "undefined") return null
-
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-
-  if (parts.length === 2) {
-    return parts.pop().split(";").shift()
-  }
-
-  return null
-}
+let csrfTokenCache = null
 
 export async function ensureCsrfCookie() {
-  await api.get("/health/", {
+  const res = await api.get("/health/", {
     withCredentials: true,
   })
 
-  const token = getCookie("csrftoken")
-  console.log("CSRF AFTER /health/:", token)
-  console.log("COOKIE STRING:", document.cookie)
+  csrfTokenCache = res.data?.csrfToken || null
+  console.log("CSRF TOKEN FROM API:", csrfTokenCache)
 
-  return token
+  return csrfTokenCache
 }
 
 async function post(url, data = {}, config = {}) {
-  const csrftoken = getCookie("csrftoken") || (await ensureCsrfCookie())
+  const csrftoken = csrfTokenCache || (await ensureCsrfCookie())
+
+  if (!csrftoken) {
+    throw new Error("CSRF token missing from backend response.")
+  }
 
   const headers = {
     "X-CSRFToken": csrftoken,
@@ -103,15 +95,13 @@ export async function uploadReport(file) {
   const formData = new FormData()
   formData.append("file", file)
 
-  await ensureCsrfCookie()
-  const csrftoken = getCookie("csrftoken")
-
-  console.log("CSRFTOKEN BEFORE UPLOAD:", csrftoken)
-  console.log("DOCUMENT COOKIE:", document.cookie)
+  const csrftoken = csrfTokenCache || (await ensureCsrfCookie())
 
   if (!csrftoken) {
-    throw new Error("CSRF token missing in browser cookies.")
+    throw new Error("CSRF token missing from backend response.")
   }
+
+  console.log("USING CSRF TOKEN FOR UPLOAD:", csrftoken)
 
   const res = await api.post("/reports/upload/", formData, {
     withCredentials: true,
