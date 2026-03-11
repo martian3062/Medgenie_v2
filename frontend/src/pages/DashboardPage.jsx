@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import gsap from 'gsap'
 
-import { getReport, getSummaryPdfUrl } from '../lib/api'
+import { getReport, downloadSummaryPdf } from '../lib/api'
 import BodyModel3D from '../components/BodyModel3D'
 import FindingList from '../components/FindingList'
 import LabPanels from '../components/LabPanels'
@@ -14,11 +14,14 @@ export default function DashboardPage() {
   const { id } = useParams()
   const [report, setReport] = useState(null)
   const [selectedRegion, setSelectedRegion] = useState(null)
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
-    getReport(id).then(setReport).catch((error) => {
-      console.error(error)
-    })
+    getReport(id)
+      .then(setReport)
+      .catch((error) => {
+        console.error(error)
+      })
   }, [id])
 
   useEffect(() => {
@@ -30,6 +33,17 @@ export default function DashboardPage() {
       { opacity: 1, y: 0, duration: 0.8, stagger: 0.08 }
     )
   }, [report])
+
+  async function handleDownloadSummary() {
+    try {
+      setDownloading(true)
+      await downloadSummaryPdf(id)
+    } catch (error) {
+      console.error('Summary PDF download failed:', error)
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   if (!report) {
     return <div className="p-8 text-slate-300">Loading dashboard...</div>
@@ -52,12 +66,13 @@ export default function DashboardPage() {
               <p className="mt-2 text-slate-400">{report.original_name}</p>
             </div>
 
-            <a
-              href={getSummaryPdfUrl(id)}
-              className="rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400"
+            <button
+              onClick={handleDownloadSummary}
+              disabled={downloading}
+              className="rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Download Summary PDF
-            </a>
+              {downloading ? 'Downloading...' : 'Download Summary PDF'}
+            </button>
           </div>
 
           <p className="mt-4 text-slate-200">
