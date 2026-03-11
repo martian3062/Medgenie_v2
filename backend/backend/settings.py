@@ -50,6 +50,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
 # -----------------------------------------------------------------------------
 # URLs / WSGI / ASGI
 # -----------------------------------------------------------------------------
@@ -77,10 +78,6 @@ TEMPLATES = [
 
 # -----------------------------------------------------------------------------
 # Database
-# Priority:
-# 1. DATABASE_URL -> production Postgres or other DB
-# 2. SQLITE_PATH  -> custom SQLite path
-# 3. local db.sqlite3
 # -----------------------------------------------------------------------------
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
@@ -139,22 +136,22 @@ default_frontend_origins = [
 if FRONTEND_ORIGIN:
     default_frontend_origins.append(FRONTEND_ORIGIN)
 
-# remove duplicates while preserving order
 default_frontend_origins = list(dict.fromkeys(default_frontend_origins))
 
 CORS_ALLOWED_ORIGINS = default_frontend_origins
 CSRF_TRUSTED_ORIGINS = default_frontend_origins
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.netlify\.app$",
+]
+
 CORS_ALLOW_CREDENTIALS = True
 
 # -----------------------------------------------------------------------------
 # Session / CSRF cookies
-# Local:
-#   Lax + insecure cookies work fine when using same host
-# Production:
-#   None + Secure needed for cross-site frontend/backend
 # -----------------------------------------------------------------------------
 SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
 
 USE_CROSS_SITE_COOKIES = os.getenv("USE_CROSS_SITE_COOKIES", "false").lower() == "true"
 
@@ -169,7 +166,6 @@ else:
     SESSION_COOKIE_SECURE = not DEBUG
     CSRF_COOKIE_SECURE = not DEBUG
 
-# Helpful when behind Koyeb / proxy / HTTPS terminator
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # -----------------------------------------------------------------------------
@@ -196,7 +192,6 @@ CACHES = {
 
 # -----------------------------------------------------------------------------
 # Channels
-# In-memory is okay for local dev / single instance deploy
 # -----------------------------------------------------------------------------
 CHANNEL_LAYERS = {
     "default": {
