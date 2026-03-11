@@ -58,23 +58,31 @@ export async function signupUser({
   password,
   confirm_password,
 }) {
-  return await post("/auth/signup/", {
+  const data = await post("/auth/signup/", {
     username,
     email,
     password,
     confirm_password,
   })
+
+  await ensureCsrfCookie()
+  return data
 }
 
 export async function loginUser({ username, password }) {
-  return await post("/auth/login/", {
+  const data = await post("/auth/login/", {
     username,
     password,
   })
+
+  await ensureCsrfCookie()
+  return data
 }
 
 export async function logoutUser() {
-  return await post("/auth/logout/", {})
+  const data = await post("/auth/logout/", {})
+  csrfTokenCache = null
+  return data
 }
 
 export async function getCurrentUser() {
