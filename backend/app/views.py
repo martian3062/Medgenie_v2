@@ -20,7 +20,7 @@ from .services.groq_service import GroqChatService
 from .services.gemini_service import GeminiChatService
 from .services.news_service import NewsService
 from .services.pdf_summary import build_summary_pdf
-
+from django.middleware.csrf import get_token
 User = get_user_model()
 
 
@@ -45,7 +45,11 @@ def _serialize_user(user):
 @ensure_csrf_cookie
 @api_view(["GET"])
 def health(request):
-    return Response({"status": "ok"})
+    csrf_token = get_token(request)
+    return Response({
+        "status": "ok",
+        "csrfToken": csrf_token,
+    })
 
 
 @api_view(["POST"])
