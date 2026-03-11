@@ -1,4 +1,4 @@
-# Medicobot v3 Starter
+# Medicobot v2 Starter
 
 Django + React starter with:
 - OCR/text extraction for PDF and images
