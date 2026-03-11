@@ -1,3 +1,4 @@
+
 import axios from "axios"
 
 const ROOT_BASE =
@@ -150,8 +151,23 @@ export async function getCancerNews() {
   return res.data
 }
 
-export function getSummaryPdfUrl(id) {
-  return `${API_BASE}/reports/${id}/summary-pdf/`
+export async function downloadSummaryPdf(id) {
+  const res = await api.get(`/reports/${id}/summary-pdf/`, {
+    withCredentials: true,
+    responseType: "blob",
+  })
+
+  const blob = new Blob([res.data], { type: "application/pdf" })
+  const url = window.URL.createObjectURL(blob)
+
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `report-summary-${id}.pdf`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+
+  window.URL.revokeObjectURL(url)
 }
 
 export async function createConsultRoom(payload = {}) {
