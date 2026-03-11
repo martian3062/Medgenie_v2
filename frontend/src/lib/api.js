@@ -1,4 +1,3 @@
-
 import axios from "axios"
 
 const ROOT_BASE =
@@ -25,8 +24,15 @@ function getCookie(name) {
 }
 
 export async function ensureCsrfCookie() {
-  await api.get("/health/")
-  return getCookie("csrftoken")
+  await api.get("/health/", {
+    withCredentials: true,
+  })
+
+  const token = getCookie("csrftoken")
+  console.log("CSRF AFTER /health/:", token)
+  console.log("COOKIE STRING:", document.cookie)
+
+  return token
 }
 
 async function post(url, data = {}, config = {}) {
@@ -97,7 +103,15 @@ export async function uploadReport(file) {
   const formData = new FormData()
   formData.append("file", file)
 
-  const csrftoken = getCookie("csrftoken") || (await ensureCsrfCookie())
+  await ensureCsrfCookie()
+  const csrftoken = getCookie("csrftoken")
+
+  console.log("CSRFTOKEN BEFORE UPLOAD:", csrftoken)
+  console.log("DOCUMENT COOKIE:", document.cookie)
+
+  if (!csrftoken) {
+    throw new Error("CSRF token missing in browser cookies.")
+  }
 
   const res = await api.post("/reports/upload/", formData, {
     withCredentials: true,
